@@ -38,6 +38,13 @@ void shard(const char* file, size_t max_shard_size)
 
     n_files = (attributes.st_size / max_shard_size) + 1;
 
+	/* if max_shard_size exactly divides src file size */
+	/* subtract 1 to account for overcounted shards */
+	if( attributes.st_size % max_shard_size == 0 )
+	{
+		--n_files;
+	}
+
     /* create buffer to hold temporary shard data */
     copy_buf = (char*) malloc( max_shard_size );
 
@@ -60,11 +67,17 @@ void shard(const char* file, size_t max_shard_size)
         shard_name_buf[0] = '\0';
         strcat(shard_name_buf, file);
         strcat(shard_name_buf, "_");
-        sprintf(tmp, "%d", tmp);
+        sprintf(tmp, "%d", iter);
         strcat(shard_name_buf, tmp);
         
         /* read data from source file */
         nread = fread(copy_buf, 1, max_shard_size, src_file);
+		
+		/* break on EOF */
+		if( nread == 0 )
+		{
+			break;
+		}
 
         /* open shard file */
         if( (current_shard = fopen(shard_name_buf, "w")) == NULL )
